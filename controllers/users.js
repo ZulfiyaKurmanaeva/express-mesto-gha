@@ -1,104 +1,124 @@
 const User = require('../models/user');
 
-const BadRequestError = 400;
-const NotFoundError = 404;
-const ForbiddenError = 500;
+const BadRequestError = require('../errors/BadRequestError');
+const NotFoundError = require('../errors/NotFoundError');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
     User.find({})
         .then((users) => res.send(users))
-        .catch(() => res.status(ForbiddenError).send({ message: 'Что-то пошло не так...' }));
+        .catch(next);
 };
 
-module.exports.getUserById = (req, res) => {
-    const { id } = req.params;
-
-    User.findById(id)
-        .orFail()
-        .then((user) => res.send(user))
+module.exports.getUserById = (req, res, next) => {
+    const { userId } = req.params;
+    User.findById(userId)
+        .then((user) => {
+            if (!user) {
+                throw new NotFoundError('Пользователь по указанному _id не найден');
+            }
+            res.send({ data: user });
+        })
         .catch((err) => {
             if (err.name === 'CastError') {
-                return res
-                    .status(BadRequestError)
-                    .send({ message: 'Пользователь по указанному _id не найден.' });
+                return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
             }
-
-            if (err.name === 'DocumentNotFoundError') {
-                return res
-                    .status(NotFoundError)
-                    .send({ message: 'Пользователь по указанному _id не найден.' });
-            }
-
-            return res.status(ForbiddenError).send({ message: 'Что-то пошло не так...' });
+            return next(err);
         });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.getUser = (req, res, next) => {
+    userSchema
+        .findById(req.user._id)
+        .then((user) => {
+            if (!user) {
+                throw new NotFoundError('Пользователь не найден');
+            }
+            res.status(200)
+                .send(user);
+        })
+        .catch((err) => {
+            if (err.name === 'CastError') {
+                next(BadRequestError('Переданы некорректные данные'));
+            } else {
+                next(err);
+            }
+        });
+};
+
+module.exports.createUser = (req, res, next) => {
     const { name, about, avatar } = req.body;
 
-    User.create({ name, about, avatar })
-        .then((user) => res.status(201).send(user))
+    User.create({
+        name,
+        about,
+        avatar
+    })
+        .then(() => res.status(201)
+            .send(
+                {
+                    data: {
+                        name,
+                        about,
+                        avatar
+                    },
+                },
+            ))
         .catch((err) => {
             if (err.name === 'ValidationError') {
-                return res.status(BadRequestError).send({
-                    message: 'Переданы некорректные данные при создании пользователя.',
-                });
+                return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
             }
-
-            return res.status(ForbiddenError).send({ message: 'Что-то пошло не так...' });
+            return next(err);
         });
-};
+}
 
-module.exports.updateUser = (req, res) => {
+
+module.exports.updateUser = (req, res, next) => {
     const { name, about } = req.body;
 
     User.findByIdAndUpdate(
         req.user._id,
-        { name, about },
-        { new: true, runValidators: true },
+        {
+            name,
+            about,
+        },
+        {
+            new: true,
+            runValidators: true,
+        },
     )
-        .orFail()
-        .then((user) => res.send(user))
+        .orFail(() => {
+            throw new NotFoundError('Пользователь с указанным _id не найден');
+        })
+        .then((user) => res.status(200)
+            .send(user))
         .catch((err) => {
-            if (err.name === 'ValidationError') {
-                return res.status(BadRequestError).send({
-                    message: 'Переданы некорректные данные при обновлении профиля.',
-                });
+            if (err.name === 'CastError' || err.name === 'ValidationError') {
+                return next(new BadRequestError('Переданы некорректные данные при обновлении профиля'));
             }
-
-            if (err.name === 'DocumentNotFoundError') {
-                return res.status(NotFoundError).send({
-                    message: 'Пользователь с указанным _id не найден.',
-                });
-            }
-
-            return res.status(ForbiddenError).send({ message: 'Что-то пошло не так...' });
+            return next(err);
         });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
     const { avatar } = req.body;
 
     User.findByIdAndUpdate(
         req.user._id,
         { avatar },
-        { new: true, runValidators: true },
+        {
+            new: true,
+            runValidators: true,
+        },
     )
-        .orFail()
-        .then((user) => res.status(200).send(user))
+        .orFail(() => {
+            throw new NotFoundError('Аватар пользователя по указанному _id не найден');
+        })
+        .then((user) => res.status(200)
+            .send(user))
         .catch((err) => {
-            if (err.name === 'ValidationError') {
-                return res.status(BadRequestError).send({
-                    message: 'Переданы некорректные данные при обновлении аватара.',
-                });
+            if (err.name === 'CastError' || err.name === 'ValidationError') {
+                return next(new BadRequestError('Переданы некорректные данные при обновлении аватара'));
             }
-
-            if (err.name === 'DocumentNotFoundError') {
-                return res.status(NotFoundError).send({
-                    message: 'Пользователь с указанным _id не найден.',
-                });
-            }
-
-            return res.status(ForbiddenError).send({ message: 'Что-то пошло не так...' });
+            return next(err);
         });
 };

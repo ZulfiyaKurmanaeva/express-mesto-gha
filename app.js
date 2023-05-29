@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const { PORT = 3000 } = process.env;
@@ -7,9 +6,9 @@ const router = require('./routes/router');
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(express.json());
 
-app.use(bodyParser.json());
+app.use(express.json());
 app.use((req, res, next) => {
     req.user = {
         _id: '6473674b4bda92778b526ac4',
