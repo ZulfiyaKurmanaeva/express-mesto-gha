@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 const express = require('express');
 const mongoose = require('mongoose');
 
@@ -10,10 +12,10 @@ app.use(express.json());
 
 app.use(express.json());
 app.use((req, res, next) => {
-    req.user = {
-        _id: '6473674b4bda92778b526ac4',
-    };
-    next();
+  req.user = {
+    _id: '6473674b4bda92778b526ac4',
+  };
+  next();
 });
 
 app.use('/', router);
@@ -21,5 +23,5 @@ app.use('/', router);
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 
 app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}`);
+  console.log(`App listening on port ${PORT}`);
 });
