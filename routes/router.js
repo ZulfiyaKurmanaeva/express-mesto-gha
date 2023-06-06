@@ -2,12 +2,13 @@ const router = require('express').Router();
 const userRoutes = require('./users');
 const cardRoutes = require('./cards');
 
-const NotFoundError = 404;
+const NotFoundError = require('../errors/NotFoundError');
 
 router.use('/users', userRoutes);
 router.use('/cards', cardRoutes);
-router.use('/*', (req, res) => {
-  res.status(NotFoundError).send({ message: '404: Ошибка! Данные не найдены!' });
+
+router.use('/*', (req, res, next) => {
+  next(new NotFoundError('404: Ошибка! Данные не найдены!'));
 });
 
 module.exports = router;
