@@ -23,7 +23,7 @@ const validationCreateUser = celebrate({
       about: Joi.string().min(2).max(30),
       email: Joi.string().required().email(),
       avatar: Joi.string().custom(validationUrl),
-      password: Joi.string().pattern(/^[a-zA-Z0-9]{6,20}$/).required(),
+      password: Joi.string().min(6).max(20).required(),
     }),
 });
 
@@ -31,7 +31,7 @@ const validationLogin = celebrate({
   body: Joi.object()
     .keys({
       email: Joi.string().required().email(),
-      password: Joi.string().pattern(/^[a-zA-Z0-9]{6,20}$/).required(),
+      password: Joi.string().min(6).max(20).required(),
     }),
 });
 
